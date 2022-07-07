@@ -13,6 +13,6 @@ const server = app.listen(PORT, () =>
 );
 
 process.on('unhandledRejection', (err) => {
-	console.error(err.message);
+	console.error(err);
 	server.close(() => process.exit(1));
 });
