@@ -1,4 +1,5 @@
 const User = require('../model/User');
+const bcrypt = require('bcryptjs');
 
 exports.register = async (req, res, next) => {
 	const { username, password } = req.body;
@@ -10,13 +11,15 @@ exports.register = async (req, res, next) => {
 	}
 
 	try {
-		await User.create({
-			username,
-			password,
-		}).then((user) => {
-			res.status(200).json({
-				message: 'User successfully created.',
-				user,
+		bcrypt.hash(password, process.env.SALT).then(async (hash) => {
+			await User.create({
+				username,
+				password: hash,
+			}).then((user) => {
+				res.status(200).json({
+					message: 'User successfully created.',
+					user,
+				});
 			});
 		});
 	} catch (err) {
@@ -37,15 +40,23 @@ exports.login = async (req, res, next) => {
 	}
 
 	try {
-		const user = await User.findOne({ username, password });
+		const user = await User.findOne({ username });
 		if (!user) {
 			res.status(401).json({
 				message: 'Login unsuccessful.',
 			});
 		} else {
-			res.status(200).json({
-				message: 'Login successful',
-				user,
+			bcrypt.compare(password, user.password).then((result) => {
+				if (result) {
+					res.status(200).json({
+						message: 'Login successful',
+						user,
+					});
+				} else {
+					res.status(400).json({
+						message: 'Invalid login',
+					});
+				}
 			});
 		}
 	} catch (err) {
